@@ -1,0 +1,90 @@
+\documentclass{article}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\title{Enhanced typename}
+\author{Tian Liao}
+\date{November 25, 2023}
+
+\newcommand{\CodeBlockSetup}{%
+  \lstset{
+        language=C++,
+        basicstyle=\small\ttfamily,
+        keywordstyle=,
+        stringstyle=,
+        xleftmargin=1em,
+        showstringspaces=false,
+        commentstyle=\itshape\rmfamily,
+        columns=fullflexible,
+        keepspaces=true,
+        texcl=true
+  }%
+}
+\lstnewenvironment{codeblock}{\CodeBlockSetup}{}
+
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\vfill
+\begin{itemize}[noitemsep]
+  \item[] Document number:
+  \item[] Date:
+  \item[] Audience:
+  \item[] Authors: Tian Liao
+  \item[] Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater
+\end{itemize}
+
+\newpage
+\pagenumbering{arabic}
+
+%----------------------------------------------
+\section{Introduction}
+
+%----------------------------------------------
+\section{Proposal}
+Quick glance:
+\begin{codeblock}
+// declare some materials
+struct Color {
+  void apply() {}
+};
+
+struct Texture {
+  void apply() {}
+};
+
+struct Glass {
+  void apply() {}
+};
+
+// define a type alias
+typename Material {
+  void apply();
+};
+
+int main() {
+  {
+    // use Material as a pointer
+    Color color;
+    Material* material = color;
+    material->apply();
+  }
+  {
+    // use Material as a reference
+    Texture texture;
+    Material& material = texture;
+    material.apply();
+  }
+  {
+    // host a Material in unique ptr
+    std::unique_ptr<Material> material{new Glass()};
+    material->apply();
+  }
+}
+\end{codeblock}
+
+%----------------------------------------------
+\section{Motivation}
+
+\end{document}

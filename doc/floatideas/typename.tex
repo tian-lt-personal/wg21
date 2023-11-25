@@ -86,15 +86,15 @@ Material some_material; // compile error.
 \paragraph{}
 Type alias can also combine with other type aliases to form a new type alias.
 \begin{codeblock}
-typename Gettable{ void get(); };
-typename Settable{ void set(); };
+typename Source{ void read(); };
+typename Sink{ void write(); };
 
-typename GetSet : Gettable, Settable {};
-typename GetSetEquvalent {
-  void get();
-  void set();
+typename DuplexStream : Source, Sink {};
+typename DuplexStreamEquvalent {
+  void read();
+  void write();
 };
-static_assert(std::is_same_v<GetSet, GetSetEquvalent>);
+static_assert(std::is_same_v<DuplexStream, DuplexStreamEquvalent>);
 \end{codeblock}
 
 \paragraph{}

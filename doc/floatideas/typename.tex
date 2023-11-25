@@ -5,7 +5,7 @@
 
 \title{Enhanced typename}
 \author{Tian Liao}
-\date{November 25, 2023}
+\date{\today}
 
 \newcommand{\CodeBlockSetup}{%
   \lstset{
@@ -29,9 +29,9 @@
 \vfill
 \begin{itemize}[noitemsep]
   \item[] Document number:
-  \item[] Date:
+  \item[] Date: \today
   \item[] Audience:
-  \item[] Authors: Tian Liao
+  \item[] Authors: Tian Liao, Mingxin Wang
   \item[] Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater
 \end{itemize}
 
@@ -101,8 +101,9 @@ static_assert(std::is_same_v<GetSet, GetSetEquvalent>);
 Type alias can also have specific constraints to control its copiability, relocatability, etc.
 \begin{codeblock}
 typename NoCopyNoMove {
-  NoTrivial(const NoTrivial&) = delete;
-  NoTrivial(NoTrivial&&) = delete;
+  NoCopyNoMove() = default;
+  NoCopyNoMove(const NoCopyNoMove&) = delete;
+  NoCopyNoMove(NoCopyNoMove&&) = delete;
 };
 
 void foo(NoCopyNoMove& a, NoCopyNoMove& b) {

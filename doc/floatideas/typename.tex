@@ -128,6 +128,17 @@ void foo(const Addition& add) {
 }
 \end{codeblock}
 
+\paragraph{}
+Type alias can also have templates.
+\begin{codeblock}
+template <typename T, std::size_t I>
+typename GenericMaterial {
+  using type = T;
+  static constexpr std::size_t index = I;
+  void apply(const T& target);
+};
+\end{codeblock}
+
 %----------------------------------------------
 \section{Motivation}
 

@@ -43,25 +43,17 @@
 
 %----------------------------------------------
 \section{Proposal}
-Quick glance:
+
+\paragraph{}
+Quick glance
 \begin{codeblock}
 // declare some materials
-struct Color {
-  void apply() {}
-};
-
-struct Texture {
-  void apply() {}
-};
-
-struct Glass {
-  void apply() {}
-};
+struct Color { void apply() {} };
+struct Texture { void apply() {} };
+struct Glass { void apply() {} };
 
 // define a type alias
-typename Material {
-  void apply();
-};
+typename Material { void apply(); };
 
 int main() {
   {
@@ -83,6 +75,36 @@ int main() {
   }
 }
 \end{codeblock}
+
+\paragraph{}
+Type alias can also combine with other type aliases to form a new type alias.
+\begin{codeblock}
+typename Gettable{ void get(); };
+typename Settable{ void set(); };
+
+typename GetSet : Gettable, Settable {};
+typename GetSetEquvalent {
+  void get();
+  void set();
+};
+static_assert(std::is_same_v<GetSet, GetSetEquvalent>);
+\end{codeblock}
+
+\paragraph{}
+Type alias can also have specific constraints to control its copiability, relocatability, etc.
+\begin{codeblock}
+typename NoCopyNoMove {
+  NoTrivial(const NoTrivial&) = delete;
+  NoTrivial(NoTrivial&&) = delete;
+};
+
+void foo(NoCopyNoMove& a, NoCopyNoMove& b) {
+  a = b; // compile error
+  a = std::move(b); // compile error
+}
+\end{codeblock}
+
+
 
 %----------------------------------------------
 \section{Motivation}

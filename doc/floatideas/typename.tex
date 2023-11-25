@@ -45,35 +45,42 @@
 \section{Proposal}
 
 \paragraph{}
-Quick glance
+A quick glance:
 \begin{codeblock}
-// declare some materials
+// declare some materials.
 struct Color { void apply() {} };
 struct Texture { void apply() {} };
 struct Glass { void apply() {} };
 
-// define a type alias
+// define a type alias.
 typename Material { void apply(); };
 
 void foo() {
   {
-    // use Material as a pointer
+    // use Material as a pointer.
     Color color;
     Material* material = color;
     material->apply();
   }
   {
-    // use Material as a reference
+    // use Material as a reference.
     Texture texture;
     Material& material = texture;
     material.apply();
   }
   {
-    // host a Material in unique ptr
+    // host a Material in unique ptr.
     std::unique_ptr<Material> material{new Glass()};
     material->apply();
   }
 }
+
+// defining a type alias is not allowed.
+void Material::apply() {} // compile error.
+
+// instanciate a type alias is also not allowed.
+Material some_material; // compile error.
+
 \end{codeblock}
 
 \paragraph{}
@@ -99,8 +106,8 @@ typename NoCopyNoMove {
 };
 
 void foo(NoCopyNoMove& a, NoCopyNoMove& b) {
-  a = b; // compile error
-  a = std::move(b); // compile error
+  a = b; // compile error.
+  a = std::move(b); // compile error.
 }
 \end{codeblock}
 

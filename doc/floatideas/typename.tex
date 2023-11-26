@@ -44,8 +44,12 @@
 %----------------------------------------------
 \section{Proposal}
 
+\subsection{Language feature}
 \paragraph{}
-A quick glance:
+This proposal is going to extend the semantics of the \textit{typename} keyword to allow it defines
+type aliases that represent type erasers who keep their underlying types associated and dispatch
+runtime invocations properly.\\
+Here is a quick glance:
 \begin{codeblock}
 // define some materials.
 struct Color { void apply() {} };
@@ -84,7 +88,7 @@ Material some_material; // compile error.
 \end{codeblock}
 
 \paragraph{}
-Type alias can also combine with other type aliases to form a new type alias.
+A type alias can combine other type aliases to form a new type alias.
 \begin{codeblock}
 typename Source{ void read(); };
 typename Sink{ void write(); };
@@ -98,7 +102,7 @@ static_assert(std::is_same_v<DuplexStream, DuplexStreamEquvalent>);
 \end{codeblock}
 
 \paragraph{}
-Type alias can also have specific constraints to control its copiability, relocatability, etc.
+A type alias can have specific constraints to control its construction, copiability, relocatability, etc.
 \begin{codeblock}
 typename NoCopyNoMove {
   NoCopyNoMove() = default;
@@ -113,7 +117,7 @@ void foo(NoCopyNoMove& a, NoCopyNoMove& b) {
 \end{codeblock}
 
 \paragraph{}
-Function overloads.
+A type alias can have function overloads.
 
 \begin{codeblock}
 typename Addition {
@@ -130,7 +134,7 @@ void foo(const Addition& add) {
 \end{codeblock}
 
 \paragraph{}
-Type alias can also have templates.
+A type alias can be a template.
 \begin{codeblock}
 template <typename T, std::size_t I>
 typename GenericMaterial {
@@ -138,6 +142,35 @@ typename GenericMaterial {
   static constexpr std::size_t index = I;
   void apply(const T& target);
 };
+\end{codeblock}
+
+\subsection{Library feature}
+\paragraph{}
+\begin{codeblock}
+namespace std {
+template <class T>
+class poly_ptr<T>;
+} // namespace std
+
+void foo() {
+  {
+    std::poly_ptr<Material> nouse;
+    assert(!nouse.has_value()); // no value.
+  }
+  {
+    Glass glass;
+    {
+      std::poly_ptr<Material> mat = &glass; // accepts a raw pointer.
+      mat->apply();
+      assert(dummy.has_value()); // contains value.
+    }
+    glass.apply(); // glass is still alive till here.
+  }
+  {
+    auto color = std::make_unique<Color>(); // std::unique\_ptr\textless Color\textgreater.
+    std::poly_ptr<Material> mat = std::move(color); // accepts a smart ptr.
+  }
+}
 \end{codeblock}
 
 %----------------------------------------------

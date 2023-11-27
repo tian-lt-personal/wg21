@@ -17,5 +17,11 @@ jobs:
         with:
           root_file: ./doc/**/*.tex
       
-      - run: ls -l .
-      - run: pwd
+      - name: Preview
+        run: |
+          git stash
+          git checkout preview
+          git stash pop
+          git add ./\*.pdf
+          git commit -m 'auto preview'
+          git push origin preview

@@ -19,7 +19,7 @@ jobs:
       
       - name: Preview
         run: |
-          git stash
+          (git stash) 2>/dev/null
           git fetch origin preview
           git checkout preview
           git stash pop

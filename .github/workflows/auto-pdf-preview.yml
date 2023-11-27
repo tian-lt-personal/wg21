@@ -17,3 +17,5 @@ jobs:
         with:
           root_file: |
             /doc/**/*.tex
+      
+      - run: tree -d /

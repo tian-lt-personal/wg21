@@ -19,10 +19,10 @@ jobs:
       
       - name: Preview
         run: |
-          (git stash) 2>/dev/null
+          (git stash) 2>/dev/null || true
           git fetch origin preview
           git checkout preview
-          git stash pop
+          (git stash pop) 2>/dev/null || true
           git add ./\*.pdf
           git commit -m 'auto preview'
           git push origin preview

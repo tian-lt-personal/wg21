@@ -20,6 +20,7 @@ jobs:
       - name: Preview
         run: |
           git stash
+          git fetch origin preview
           git checkout preview
           git stash pop
           git add ./\*.pdf

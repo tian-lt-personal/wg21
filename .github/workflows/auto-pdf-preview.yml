@@ -19,3 +19,5 @@ jobs:
             /doc/**/*.tex
       
       - run: tree -d .
+      - run: ls ./doc
+      - run: ls ./doc/floatideas

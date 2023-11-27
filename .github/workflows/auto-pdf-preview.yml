@@ -18,4 +18,4 @@ jobs:
           root_file: |
             /doc/**/*.tex
       
-      - run: tree -d /
+      - run: tree -d .

@@ -18,6 +18,8 @@ jobs:
           root_file: ./doc/**/*.tex
       
       - name: Preview
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.email "script@no.email.com"
           git config user.name "script"

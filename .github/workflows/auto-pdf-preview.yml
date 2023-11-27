@@ -19,10 +19,12 @@ jobs:
       
       - name: Preview
         run: |
-          (git stash) 2>/dev/null || true
+          git config user.email "script@no.email.com"
+          git config user.name "script"
+          git stash || true
           git fetch origin preview
           git checkout preview
-          (git stash pop) 2>/dev/null || true
+          git stash pop || true
           git add ./\*.pdf
-          git commit -m 'auto preview'
-          git push origin preview
+          git commit -m 'auto preview' || true
+          git push origin preview || true

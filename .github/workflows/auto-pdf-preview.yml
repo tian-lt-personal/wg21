@@ -17,7 +17,5 @@ jobs:
         with:
           root_file: ./doc/**/*.tex
       
-      - run: tree -d .
       - run: ls -l .
-      - run: ls -l ./doc
-      - run: ls -l ./doc/floatideas
+      - run: pwd

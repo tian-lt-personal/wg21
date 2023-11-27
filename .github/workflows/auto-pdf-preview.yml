@@ -21,12 +21,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mkdir /home/pdf
+          mv *.pdf /home/pdf
           git config user.email "script@no.email.com"
           git config user.name "script"
-          git stash || true
           git fetch origin preview
           git checkout preview
-          git stash pop || true
+          mv -f /home/pdf/*.pdf .
           git add ./\*.pdf
           git commit -m 'auto preview' || true
           git push origin preview || true

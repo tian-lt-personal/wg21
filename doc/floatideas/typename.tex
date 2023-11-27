@@ -102,6 +102,32 @@ static_assert(std::is_same_v<DuplexStream, DuplexStreamEquvalent>);
 \end{codeblock}
 
 \paragraph{}
+A type alias can declare fields.
+\begin{codeblock}
+typename Account {
+  void RefreshData();
+  std::string Name;
+  std::string Email;
+};
+
+class WebAccount {
+  void RefreshData() { /*...*/ }
+  std::string Name;
+  std::string Email;
+};
+
+void consume(Account& user) {
+  user.RefreshData();
+  UpdateUI(user.Name, user.Email);
+}
+
+void produce() {
+  WebAccount user{ .Name = "Bob", .Email = "Bob@email.com" };
+  consume(user);
+}
+\end{codeblock}
+
+\paragraph{}
 A type alias can have specific constraints to control its construction, copiability, relocatability, etc.
 \begin{codeblock}
 typename NoCopyNoMove {
@@ -148,27 +174,30 @@ typename GenericMaterial {
 \paragraph{}
 \begin{codeblock}
 namespace std {
-template <class T>
-class poly_ptr<T>;
+template <class T, size_t MaxSize, size_t MaxAlign>
+class poly_ptr;
 } // namespace std
 
 void foo() {
   {
     std::poly_ptr<Material> nouse;
     assert(!nouse.has_value()); // no value.
+    nouse->apply(); // undefined behavior.
   }
   {
     Glass glass;
     {
       std::poly_ptr<Material> mat = &glass; // accepts a raw pointer.
-      mat->apply();
       assert(dummy.has_value()); // contains value.
+      mat->apply();
     }
     glass.apply(); // glass is still alive till here.
   }
   {
     auto color = std::make_unique<Color>(); // std::unique\_ptr\textless Color\textgreater.
     std::poly_ptr<Material> mat = std::move(color); // accepts a smart ptr.
+    assert(dummy.has_value()); // contains value.
+    mat->apply();
   }
 }
 \end{codeblock}

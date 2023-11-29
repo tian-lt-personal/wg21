@@ -3,7 +3,7 @@
 \usepackage{enumitem}
 \usepackage{listings}
 
-\title{Enhanced typename}
+\title{Poly types}
 \author{Tian Liao}
 \date{\today}
 
@@ -46,7 +46,7 @@
 
 \subsection{Language feature}
 \paragraph{}
-This proposal is going to extend the semantics of the \textit{typename} keyword to allow it defines
+This proposal is going to add a new keyword \textit{type} keyword to defines
 type aliases that represent type erasers who keep their underlying types associated and dispatch
 runtime invocations properly.\\
 Here is a quick glance:
@@ -57,7 +57,7 @@ struct Texture { void apply() {} };
 struct Glass { void apply() {} };
 
 // declare a type alias.
-typename Material { void apply(); };
+type Material { void apply(); };
 
 void foo() {
   {
@@ -90,11 +90,11 @@ Material some_material; // compile error.
 \paragraph{}
 A type alias can combine other type aliases to form a new type alias.
 \begin{codeblock}
-typename Source{ void read(); };
-typename Sink{ void write(); };
+type Source{ void read(); };
+type Sink{ void write(); };
 
-typename DuplexStream : Source, Sink {};
-typename DuplexStreamEquvalent {
+type DuplexStream : Source, Sink {};
+type DuplexStreamEquvalent {
   void read();
   void write();
 };
@@ -104,7 +104,7 @@ static_assert(std::is_same_v<DuplexStream, DuplexStreamEquvalent>);
 \paragraph{}
 A type alias can declare fields.
 \begin{codeblock}
-typename Account {
+type Account {
   void RefreshData();
   std::string Name;
   std::string Email;
@@ -128,25 +128,10 @@ void produce() {
 \end{codeblock}
 
 \paragraph{}
-A type alias can have specific constraints to control its construction, copiability, relocatability, etc.
-\begin{codeblock}
-typename NoCopyNoMove {
-  NoCopyNoMove() = default;
-  NoCopyNoMove(const NoCopyNoMove&) = delete;
-  NoCopyNoMove(NoCopyNoMove&&) = delete;
-};
-
-void foo(NoCopyNoMove& a, NoCopyNoMove& b) {
-  a = b; // compile error.
-  a = std::move(b); // compile error.
-}
-\end{codeblock}
-
-\paragraph{}
 A type alias can have function overloads.
 
 \begin{codeblock}
-typename Addition {
+type Addition {
   void operator()() const;
   int operator()(int , int) const;
   float operator()(float, float) const;
@@ -163,7 +148,7 @@ void foo(const Addition& add) {
 A type alias can be a template.
 \begin{codeblock}
 template <typename T, std::size_t I>
-typename GenericMaterial {
+type GenericMaterial {
   using type = T;
   static constexpr std::size_t index = I;
   void apply(const T& target);

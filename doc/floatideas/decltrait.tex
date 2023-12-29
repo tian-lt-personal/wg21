@@ -1,0 +1,92 @@
+\documentclass{article}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\title{decltrait}
+\author{Tian Liao}
+\date{\today}
+
+\newcommand{\CodeBlockSetup}{%
+  \lstset{
+        language=C++,
+        basicstyle=\small\ttfamily,
+        keywordstyle=,
+        stringstyle=,
+        xleftmargin=1em,
+        showstringspaces=false,
+        commentstyle=\itshape\rmfamily,
+        columns=fullflexible,
+        keepspaces=true,
+        texcl=true
+  }%
+}
+\lstnewenvironment{codeblock}{\CodeBlockSetup}{}
+
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\vfill
+\begin{itemize}[noitemsep]
+  \item[] Document number:
+  \item[] Date: \today
+  \item[] Audience:
+  \item[] Authors: Tian Liao, Mingxin Wang
+  \item[] Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater
+\end{itemize}
+
+\newpage
+\pagenumbering{arabic}
+
+%----------------------------------------------
+\section{Introduction}
+
+%----------------------------------------------
+\section{Proposal}
+
+\subsection{Language feature}
+\paragraph{}
+\begin{codeblock}
+struct Drawable { void print(); };
+struct Rectangle { void print() { std::println("Rectangle."); } };
+struct Circle { void print() { std::println("Circle."); } };
+
+void foo() {
+  auto print_fn = decltrait(Drawable, Rectangle)->print;
+  Rectangle rectangle;
+  print_fn(&rectangle); // prints "Rectangle.".
+
+  print_fn = decltrait(Drawable, Circle)->print;
+  Circle circle;
+  print_fn(&circle); // prints "Circle.".
+
+  print_fn = decltrait(Drawable, &rectangle)->print;
+  print_fn(); // prints "Rectangle.".
+
+  static_assert(std::is_pointer<
+    decltrait(Drawable, Rectangle)>::value); // true.
+  static_assert(!std::is_same_v<
+    Drawable*,
+    decltype(decltrait(Drawable, Circle))>); // true (not the same).
+  static_assert(std::is_same_v<
+    decltype(decltrait(Drawable, Rectangle)),
+    decltype(decltrait(Drawable, Circle))>); // true.
+
+  static_assert(std::is_pointer<
+    decltrait(Drawable, &rectangle)>::value); // true.
+  static_assert(!std::is_same_v<
+    Drawable*,
+    decltype(decltrait(Drawable, &rectangle))>); // true (not the same).
+  static_assert(!std::is_same_v<
+    decltype(decltrait(Drawable, Rectangle)),
+    decltype(decltrait(Drawable, &rectangle))>); // true (not the same).
+  static_assert(std::is_same_v<
+    decltype(decltrait(Drawable, &rectangle)),
+    decltype(decltrait(Drawable, &circle))>); // true.
+}
+\end{codeblock}
+
+%----------------------------------------------
+\section{Motivation}
+
+\end{document}

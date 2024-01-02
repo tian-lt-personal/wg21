@@ -45,46 +45,64 @@
 \section{Proposal}
 
 \subsection{Language feature}
-\paragraph{}
+\paragraph{} \textit{decltrait-specifier:} \\
+\indent decltrait ( \textit{class-name}, \textit{id-expression} ) \\
+where, \textit{id-expression} requires to be evaluated to a pointer. \\
+\textit{decltrait} with the same \textit{class-name}s deduce reference to a unique unamed trait-type.
+
+\paragraph{} Example:
 \begin{codeblock}
 struct Drawable { void print(); };
 struct Rectangle { void print() { std::println("Rectangle."); } };
 struct Circle { void print() { std::println("Circle."); } };
 
 void foo() {
-  auto print_fn = decltrait(Drawable, Rectangle)->print;
   Rectangle rectangle;
-  print_fn(&rectangle); // prints "Rectangle.".
+  auto& drawable = decltrait(Drawable, &rectangle);
+  drawable.print(); // prints "Rectangle.".
 
-  print_fn = decltrait(Drawable, Circle)->print;
   Circle circle;
-  print_fn(&circle); // prints "Circle.".
+  decltrait(Drawable, &circle).print(); // prints "Circle.".
 
-  print_fn = decltrait(Drawable, &rectangle)->print;
-  print_fn(); // prints "Rectangle.".
-
-  static_assert(std::is_pointer<
-    decltrait(Drawable, Rectangle)>::value); // true.
+  static_assert(std::is_lvalue_reference_v<
+    decltrait(Drawable, &rectangle)>); // true.
   static_assert(!std::is_same_v<
-    Drawable*,
-    decltype(decltrait(Drawable, Circle))>); // true (not the same).
-  static_assert(std::is_same_v<
-    decltype(decltrait(Drawable, Rectangle)),
-    decltype(decltrait(Drawable, Circle))>); // true.
-
-  static_assert(std::is_pointer<
-    decltrait(Drawable, &rectangle)>::value); // true.
-  static_assert(!std::is_same_v<
-    Drawable*,
-    decltype(decltrait(Drawable, &rectangle))>); // true (not the same).
-  static_assert(!std::is_same_v<
-    decltype(decltrait(Drawable, Rectangle)),
-    decltype(decltrait(Drawable, &rectangle))>); // true (not the same).
+    Drawable,
+    std::remove_reference_t<
+      decltype(
+        decltrait(Drawable, &rectangle))>>); // true (not the same).
   static_assert(std::is_same_v<
     decltype(decltrait(Drawable, &rectangle)),
     decltype(decltrait(Drawable, &circle))>); // true.
 }
 \end{codeblock}
+
+\paragraph{} In the sample code, \verb|decltrait(Drawable, &rectangle)| asking compiler to do some magic like:
+\begin{codeblock}
+struct __UNIQUE_TRAIT_Drawable {
+  virtual void print() = 0;
+};
+
+struct __UNIQUE_DISPATCH_Drawable_Rectangle
+  : __UNIQUE_TRAIT_Drawable {
+  void print() override {
+    reinterpret_cast<Rectangle*>(this)->print();
+  }
+};
+
+__UNIQUE_TRAIT_Drawable& __UNIQUE_DECLTRAIT_Drawable(Rectangle* src) {
+  return
+    *reinterpret_cast<__UNIQUE_DISPATCH_Drawable_Rectangle*>(src); 
+}
+
+void foo(){
+  Rectangle rectangle;
+  decltrait(Drawable, &rectangle).print(); // is equvalent to below:
+  __UNIQUE_DECLTRAIT_Drawable(&rectangle).print();
+}
+
+\end{codeblock}
+
 
 %----------------------------------------------
 \section{Motivation}

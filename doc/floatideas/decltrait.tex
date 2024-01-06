@@ -77,31 +77,6 @@ void foo() {
 }
 \end{codeblock}
 
-\paragraph{} In the sample code, \verb|decltrait(Drawable, &rectangle)| asking compiler to do some magic like:
-\begin{codeblock}
-struct __UNIQUE_TRAIT_Drawable {
-  virtual void print() = 0;
-};
-
-struct __UNIQUE_DISPATCH_Drawable_Rectangle
-  : __UNIQUE_TRAIT_Drawable {
-  void print() override {
-    reinterpret_cast<Rectangle*>(this)->print();
-  }
-};
-
-__UNIQUE_TRAIT_Drawable& __UNIQUE_DECLTRAIT_Drawable(Rectangle* src) {
-  return
-    *reinterpret_cast<__UNIQUE_DISPATCH_Drawable_Rectangle*>(src); 
-}
-
-void foo(){
-  Rectangle rectangle;
-  decltrait(Drawable, &rectangle).print(); // is equvalent to below:
-  __UNIQUE_DECLTRAIT_Drawable(&rectangle).print();
-}
-
-\end{codeblock}
 
 
 %----------------------------------------------

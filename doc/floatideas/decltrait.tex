@@ -48,7 +48,7 @@
 \paragraph{} \textit{decltrait-specifier:} \\
 \indent decltrait \textbf{(} \textit{class-name} \textbf{)} \\
 \indent decltrait \textbf{(} \textit{class-name} \textbf{,} \textit{expression} \textbf{)} \\
-where, \textit{expression} requires to be evaluated as a pointer.
+where, \textit{expression} must be such that it can be evaluated as a pointer whose type conforms to the public layout defined by the \textit{class-name} type.
 
 \textit{decltrait} returns a value that represents a fancy pointer to a polymorphic type that matches the public layout of the \textit{class-name} type.
 
@@ -79,7 +79,7 @@ void foo() {
 \end{codeblock}
 
 
-For the example above, below is a hack implementation that simulates a way how to achieve \textit{decltrait}:
+For the example, the following implementation is simple and dirty hack that simulates a way to achieve \textit{decltrait}:
 \begin{codeblock}
 #include <print>
 
@@ -156,8 +156,11 @@ struct HackFactory {
 int main() {
   Rectangle rect;
   Circle circle;
+  // auto trait = decltrait(Drawable, \&rect);
   auto trait = hack::HackFactory::DeclTrait_Drawable(&rect);
   trait->print();  // prints Rectangle.
+
+  // trait = decltrait(Drawable, \&circle);
   trait = hack::HackFactory::DeclTrait_Drawable(&circle);
   trait->print();  // prints Circle.
 }

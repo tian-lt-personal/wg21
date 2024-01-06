@@ -140,13 +140,13 @@ class TraitPtr {
 struct HackFactory {
   static auto DeclTrait_Drawable(Rectangle* target) {
     TraitPtr<DrawableDynTrait> ptr;
-    new (ptr.storage_) Drawable_Rectangle{target};
+    new (ptr.storage_) Drawable_Rectangle{target}; // UB, but let's hack it
     return ptr;
   }
 
   static auto DeclTrait_Drawable(Circle* target) {
     TraitPtr<DrawableDynTrait> ptr;
-    new (ptr.storage_) Drawable_Circle{target};  // UB, but let's hack it
+    new (ptr.storage_) Drawable_Circle{target}; // UB, the same.
     return ptr;
   }
 };

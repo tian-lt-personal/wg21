@@ -5,74 +5,87 @@ struct Drawable {
   void resize(int) = delete;
 };
 struct Rectangle {
+  Rectangle() = default;
+  ~Rectangle() { std::println("destruct Rectangle."); }
   void print() { std::println("Rectangle."); }
 };
 struct Circle {
+  Circle() = default;
+  ~Circle() { std::println("destruct Circle."); }
   void print() { std::println("Circle."); }
 };
 
 namespace hack {
+struct Factory;
+template <class>
+class TraitPtr;
 
-struct DrawableDynTrait {
-  virtual void print() = 0;
+namespace details {
 
- protected:
-  void* target;
+struct TypeErased {};
+
+struct DrawableVTable {
+  using dtor_t = void (*)(void*);
+  using sig_void_void_t = void (TypeErased::*)();
+  dtor_t __dtor;
+  sig_void_void_t print;
 };
 
-struct Drawable_Rectangle : DrawableDynTrait {
-  explicit Drawable_Rectangle(Rectangle* tgt) { target = tgt; }
-  void print() override { static_cast<Rectangle*>(target)->print(); }
-};
+class DrawableTrait {
+  friend struct hack::Factory;
 
-struct Drawable_Circle : DrawableDynTrait {
-  explicit Drawable_Circle(Circle* tgt) { target = tgt; }
-  void print() override { static_cast<Circle*>(target)->print(); }
-};
-
-template <class DynTrait>
-class TraitPtr {
-  friend struct HackFactory;
+  template <class>
+  friend class hack::TraitPtr;
 
  public:
-  TraitPtr() : storage_{0} {}
-  TraitPtr(const TraitPtr&) = default;
-  TraitPtr(TraitPtr&&) = default;
-  TraitPtr& operator=(const TraitPtr&) = default;
-  TraitPtr& operator=(TraitPtr&&) = default;
-
-  DynTrait* operator->() { return reinterpret_cast<DynTrait*>(storage_); }
-  bool has_value() const {
-    return reinterpret_cast<const void*>(storage_) != nullptr;
+  void print() {
+    auto t = static_cast<TypeErased*>(target_);
+    (t->*(vptr_->print))();
   }
-  operator bool() const { return has_value(); }
-  friend bool operator==(const TraitPtr& self, std::nullptr_t) { return !self; }
 
  private:
-  alignas(DynTrait) char storage_[sizeof(void*) * 2];
+  explicit DrawableTrait(DrawableVTable* vptr, void* target) noexcept
+      : vptr_(vptr), target_(target) {}
+  DrawableVTable* vptr_;
+  void* target_;
 };
 
-struct HackFactory {
-  static auto DeclTrait_Drawable(Rectangle* target) {
-    TraitPtr<DrawableDynTrait> ptr;
-    new (ptr.storage_) Drawable_Rectangle{target};
-    return ptr;
-  }
+}  // namespace details
 
-  static auto DeclTrait_Drawable(Circle* target) {
-    TraitPtr<DrawableDynTrait> ptr;
-    new (ptr.storage_) Drawable_Circle{target};  // UB, but let's hack it
-    return ptr;
-  }
+template <class Trait>
+class TraitPtr {
+  friend struct Factory;
+
+ public:
+  void destroy() { trait_.vptr_->__dtor(trait_.target_); }
+  Trait* operator->() { return &trait_; }
+  bool has_value() const { return trait_.target_ != nullptr; }
+
+ private:
+  explicit TraitPtr(Trait trait) : trait_(trait) {}
+  Trait trait_;
 };
 
+struct Factory {
+  template <class T>
+  static auto decltrait_Drawable(T* target) {
+    static details::DrawableVTable vtable{
+        .__dtor = [](void* t) { static_cast<T*>(t)->~T(); },
+        .print = reinterpret_cast<details::DrawableVTable::sig_void_void_t>(
+            &T::print)};
+    return TraitPtr<details::DrawableTrait>{
+        details::DrawableTrait{&vtable, target}};
+  }
+};
 }  // namespace hack
 
 int main() {
   Rectangle rect;
   Circle circle;
-  auto trait = hack::HackFactory::DeclTrait_Drawable(&rect);
-  trait->print();  // prints Rectangle.
-  trait = hack::HackFactory::DeclTrait_Drawable(&circle);
-  trait->print();  // prints Circle.
+  auto trait = hack::Factory::decltrait_Drawable(&rect);
+  trait->print();   // prints Rectangle.
+  trait.destroy();  // prints destruct Rectangle.
+  trait = hack::Factory::decltrait_Drawable(&circle);
+  trait->print();   // prints Circle.
+  trait.destroy();  // prints destruct Circle.
 }

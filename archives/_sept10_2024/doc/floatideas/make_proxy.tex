@@ -1,0 +1,45 @@
+\documentclass{article}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\title{decltrait}
+\author{Tian Liao}
+\date{\today}
+
+\newcommand{\CodeBlockSetup}{%
+  \lstset{
+        language=C++,
+        basicstyle=\small\ttfamily,
+        keywordstyle=,
+        stringstyle=,
+        xleftmargin=1em,
+        showstringspaces=false,
+        commentstyle=\itshape\rmfamily,
+        columns=fullflexible,
+        keepspaces=true,
+        texcl=true
+  }%
+}
+\lstnewenvironment{codeblock}{\CodeBlockSetup}{}
+
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\vfill
+\begin{itemize}[noitemsep]
+  \item[] Document number:
+  \item[] Date: \today
+  \item[] Audience:
+  \item[] Authors: Tian Liao, Mingxin Wang
+  \item[] Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater
+\end{itemize}
+
+\newpage
+\pagenumbering{arabic}
+
+%----------------------------------------------
+\section{Introduction}
+
+%----------------------------------------------
+\section{Proposal}

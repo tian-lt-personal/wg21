@@ -4,6 +4,7 @@
 \usepackage[margin=0.8in]{geometry}
 \usepackage{hyperref}
 
+\newcommand{\Cpp}{C\texttt{++}}
 \makeatletter
 \renewcommand{\maketitle}{\bgroup\setlength{\parindent}{0pt}
 \begin{flushleft}
@@ -19,16 +20,19 @@ Polymorphism Library - Proxy}
 \date{Sept. 15, 2024}
 \author{%
 \ \\
-Project: ISO/IEC 14882 Programming Languages — C++, ISO/IEC JTC1/SC22/WG21\\
+Project: ISO/IEC 14882 Programming Languages — \Cpp, ISO/IEC JTC1/SC22/WG21\\
 Authors: Tian Liao, Mingxin Wang\\
-Reply-to: Tian Liao \textless tilia@microsoft.com \textgreater \\
+Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater \\
 Audience: LEWG\\
 }
 
 \begin{document}
 \maketitle
 
-\textbf{Abstract:} \lipsum[1]
+\textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
+with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
+The focus of paper is on a utility function -- \textit{make\_proxy}, which used to be included in the \textit{proxy} proposal as a sub-feature.
+We believe it's a useful tool to help allocate \textit{proxy} instances properly.
 
 \section{Introduction}
 
@@ -37,8 +41,8 @@ which is designed to help people build extendable and efficient polymorphic prog
 This paper is proposing the utility part that is separated from early versions of paper 3086 and paper \href{https://wg21.link/p0957}{0957}.
 
 More specifically, we are eager to add function template \textit{make\_proxy} together with the \textit{proxy} library into the standard as a library feature.
-\textit{make\_proxy} is designed to provide simple ways to construct \textit{proxy} instances from values. Its syntax is similar to the constuctors of \verb|std::any|.
-With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply, depending on library implementation.
+\textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|. It is designed to provide simple ways to construct \textit{proxy} instances from values.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply, depending on library implementation, to reduce the potential overheads that may come from invoking \textit{proxy}'s constructors directly.
 
 \section{Motivation}
 \lipsum[1]

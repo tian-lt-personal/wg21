@@ -93,5 +93,21 @@ allocate the value of \verb|T| if the following conditions apply:
   \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|.
 \end{itemize}
 
+\noindent 2. \verb|template <facade F, class T, class U, class... Args>|\\
+\indent \verb|proxy<F> make_proxy(std::initializer_list<U> il, Args&&... args);|
+
+\textit{Effects}: Equivalent to
+\begin{codeblock}
+return make_proxy<F, T>(il, std::forward<Args>(args)...);
+\end{codeblock}
+
+\noindent 3. \verb|template <facade F, class T>|\\
+\indent \verb|proxy<F> make_proxy(T&& value);|
+
+\textit{Effects}: Equivalent to
+\begin{codeblock}
+return make_proxy<F, decay_t<T>>(std::forward<T>(value));
+\end{codeblock}
+
 
 \end{document}

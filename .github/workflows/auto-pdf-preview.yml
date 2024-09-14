@@ -15,7 +15,7 @@ jobs:
       - name: Make LaTex
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: ./**/*.tex
+          root_file: ./make_proxy/make_proxy.tex
       
       - name: Preview
         env:

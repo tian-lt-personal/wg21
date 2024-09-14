@@ -4,6 +4,8 @@
 \usepackage[margin=0.8in]{geometry}
 \usepackage{hyperref}
 
+\input{styles.tex}
+
 \newcommand{\Cpp}{C\texttt{++}}
 \makeatletter
 \renewcommand{\maketitle}{\bgroup\setlength{\parindent}{0pt}
@@ -48,6 +50,48 @@ With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply,
 \lipsum[1]
 
 \section{Technical specification}
-\lipsum[1]
+\subsection{Additional synopsis for header \textless proxy\textgreater}
+
+\begin{codeblock}
+namespace std {
+  template <facade F, class T, class... Args>
+  proxy<F> make_proxy(Args&&... args);
+  
+  template <facade F, class T, class U, class... Args>
+  proxy<F> make_proxy(std::initializer_list<U> il, Args&&... args);
+  
+  template <facade F, class T>
+  proxy<F> make_proxy(T&& value);
+}
+\end{codeblock}
+
+\noindent The above synopsis is assumming the proxy header has such synopsis defined in paper \href{https://wg21.link/p3086}{3086}:
+\begin{codeblock}
+namespace std {
+  template <class F>
+    concept facade // = see p3086;
+  template <class F>
+    class proxy; // see p3086
+}
+
+\end{codeblock}
+
+\subsection{Function template \texttt{std::make\_proxy}}
+1. \verb|template <facade F, class T, class... Args>|\\
+\indent \verb|proxy<F> make_proxy(Args&&... args);|
+
+\textit{Effects}: Creates an instance of \verb|proxy<F>| with an unspecified pointer type of \verb|T|,
+where the value of \verb|T| is direct-non-list-initialized with the arguments \verb|std::forward<Args>(args)....|
+
+Remarks: Implementations are not permitted to use additional storage, such as dynamic memory, to
+allocate the value of \verb|T| if the following conditions apply:
+\begin{itemize}
+  \item[--] \verb|sizeof(T)| $\le$ \verb|F::constraints.max_size|, and
+  \item[--] \verb|alignof(T)| $\le$ \verb|F::constraints.max_align|, and
+  \item[--] \verb|T| meets the copyiability requirements defined by \verb|F::constraints.copyability|, and
+  \item[--] \verb|T| meets the relocatability requirements defined by \verb|F::constraints.relocatability|, and
+  \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|.
+\end{itemize}
+
 
 \end{document}

@@ -1,7 +1,8 @@
 
 \documentclass[10pt, a4paper, oneside]{article}
-\usepackage{lipsum}
+\usepackage{lipsum} %TODO: to be removed
 \usepackage[margin=0.8in]{geometry}
+\usepackage{hyperref}
 
 \makeatletter
 \renewcommand{\maketitle}{\bgroup\setlength{\parindent}{0pt}
@@ -13,7 +14,8 @@
 }
 \makeatother
 
-\title{make proxy}
+\title{Add make\_proxy for the Pointer-Semantics-Based
+Polymorphism Library - Proxy}
 \date{Sept. 15, 2024}
 \author{%
 \ \\
@@ -29,7 +31,14 @@ Audience: LEWG\\
 \textbf{Abstract:} \lipsum[1]
 
 \section{Introduction}
-\lipsum[1]
+
+Paper \href{https://wg21.link/p3086}{3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
+which is designed to help people build extendable and efficient polymorphic programs with better abstractions and less intrusive code.
+This paper is proposing the utility part that is separated from early versions of paper 3086 and paper \href{https://wg21.link/p0957}{0957}.
+
+More specifically, we are eager to add function template \textit{make\_proxy} together with the \textit{proxy} library into the standard as a library feature.
+\textit{make\_proxy} is designed to provide simple ways to construct \textit{proxy} instances from values. Its syntax is similar to the constuctors of \verb|std::any|.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply, depending on library implementation.
 
 \section{Motivation}
 \lipsum[1]

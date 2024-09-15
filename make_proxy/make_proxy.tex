@@ -36,17 +36,18 @@ Audience: LEWG\\
 with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
 The focus of paper is on utility functions -- \textit{make\_proxy} and \textit{allocate\_proxy},
 which used to be included in the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal as a sub-feature.
-We believe it's a useful tool to help allocate \textit{proxy} instances properly.
+We believe they are useful tools to help allocate \textit{proxy} instances properly.
 
 \section{Introduction}
 
 Paper \href{https://wg21.link/p3086}{3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
 which is designed to help people build extendable and efficient polymorphic programs with better abstractions and less intrusive code.
-This paper is proposing the utility part that is separated from early versions of paper 3086 and paper \href{https://wg21.link/p0957}{0957}.
+This paper is proposing the utility part that is separated from early versions of paper 3086 and \href{https://wg21.link/p0957}{0957}.
 
-More specifically, we are eager to add function template \textit{make\_proxy} together with the \textit{proxy} library into the standard as a library feature.
+More specifically, we are eager to add function templates \textit{make\_proxy} and \textit{allocate\_proxy} together with the \textit{proxy} library into the standard as library features.
 \textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|. It is designed to provide simple ways to construct \textit{proxy} instances from values.
 With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply, depending on library implementation, to reduce the potential overheads that may come from invoking \textit{proxy}'s constructors directly.
+\textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is designed to help construct \textit{proxy} objects without the limitations of the size and the alignment for its underlying pointer type.
 
 \section{Motivation}
 Class template \textit{proxy} is based on pointer semantics,

@@ -178,9 +178,25 @@ allocate the value of \verb|T| if the following conditions apply:
   return make_proxy<F, decay_t<T>>(std::forward<T>(value));
 \end{codeblock}
 
-\section{Possible implementation}
+\section{Acknowledgements}
+Thanks to Mingxin for his advanced work on \href{https://wg21.link/p0957}{P0957} and \href{https://wg21.link/p3086}{P3086}
+and for giving me a chance to join him together to complete the work of \text{proxy}.
 
 \section{References}
+\begin{thebibliography}{9}
+\bibitem{P3086}
+[P3086] Proxy: A Pointer-Semantics-Based Polymorphism Library\smallbreak
+Mingxin Wang
+
+\bibitem{P0957}  
+[P0957] Proxy: A Polymorphic Programming Library\smallbreak
+Mingxin Wang
+
+\bibitem{microsoft/proxy}
+Open-source: Microsoft Proxy at GitHub\smallbreak
+URL: https://github.com/microsoft/proxy
+\end{thebibliography}
+
 
 
 \end{document}

@@ -3,6 +3,7 @@
 \usepackage{lipsum} %TODO: to be removed
 \usepackage[margin=0.8in]{geometry}
 \usepackage{hyperref}
+\usepackage{amsmath}
 
 \input{styles.tex}
 
@@ -33,7 +34,8 @@ Audience: LEWG\\
 
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
 with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
-The focus of paper is on a utility function -- \textit{make\_proxy}, which used to be included in the \textit{proxy} proposal as a sub-feature.
+The focus of paper is on utility functions -- \textit{make\_proxy} and \textit{allocate\_proxy},
+which used to be included in the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal as a sub-feature.
 We believe it's a useful tool to help allocate \textit{proxy} instances properly.
 
 \section{Introduction}
@@ -47,10 +49,39 @@ More specifically, we are eager to add function template \textit{make\_proxy} to
 With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply, depending on library implementation, to reduce the potential overheads that may come from invoking \textit{proxy}'s constructors directly.
 
 \section{Motivation}
-\lipsum[1]
+Class template \textit{proxy} is based on pointer semantics,
+which means instantiating a \textit{proxy} object from value usually involves heap allocations,
+though sometimes those allocations could be evitable if the size of value's type is small enough.
+
+For example, given the default maximum pointer size defined by \verb|F::constraints.max_size| is\\
+\begin{equation*}
+2 \times \texttt{sizeof(void*)}.
+\end{equation*}
+When users want to have a \textit{proxy} instance for an integer value $2024$, they may do
+\begin{codeblock}
+struct Any : some_facade_builder::build {};
+std::proxy<Any> CreateYearObject() {
+  return std::make_unique<int>(2024);  // implicitly converts to \verb|std::proxy<Any>|
+}
+\end{codeblock}
+Apparently, \verb|std::make_unique<int>(2024)| performs an allocation,
+which may be considered an expensive cost in certain scenarios.
+To improve the construction from integer values in this case,
+we shall introduce SBO here.
+Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<Any>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
+With the SBO capability provided by \textit{make\_proxy}, users can choose below implementation for the \verb|CreateYearObject()| function:
+\begin{codeblock}
+struct Any : some_facade_builder::build {};
+std::proxy<Any> CreateYearObject() {
+  return std::make_proxy<Any>(2024);  // no heap allocation happens
+}
+\end{codeblock}
+In simple words,
+\textit{make\_proxy} shall first try constructing a \textit{proxy} object with given values stored inplace,
+and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed at compile-time.
 
 \section{Technical specification}
-\subsection{Additional synopsis for header \textless proxy\textgreater}
+\subsection{Additional synopsis for header \textless memory\textgreater}
 
 \begin{codeblock}
 namespace std {
@@ -65,7 +96,7 @@ namespace std {
 }
 \end{codeblock}
 
-\noindent The above synopsis is assumming the proxy header has such synopsis defined in paper \href{https://wg21.link/p3086}{3086}:
+\noindent The above synopsis is assumming the \textit{memory} header has below synopsis defined in paper \href{https://wg21.link/p3086}{3086}:
 \begin{codeblock}
 namespace std {
   template <class F>
@@ -98,7 +129,7 @@ allocate the value of \verb|T| if the following conditions apply:
 
 \textit{Effects}: Equivalent to
 \begin{codeblock}
-return make_proxy<F, T>(il, std::forward<Args>(args)...);
+  return make_proxy<F, T>(il, std::forward<Args>(args)...);
 \end{codeblock}
 
 \noindent 3. \verb|template <facade F, class T>|\\
@@ -106,8 +137,12 @@ return make_proxy<F, T>(il, std::forward<Args>(args)...);
 
 \textit{Effects}: Equivalent to
 \begin{codeblock}
-return make_proxy<F, decay_t<T>>(std::forward<T>(value));
+  return make_proxy<F, decay_t<T>>(std::forward<T>(value));
 \end{codeblock}
+
+\section{Possible implementation}
+
+\section{References}
 
 
 \end{document}

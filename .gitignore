@@ -10,5 +10,6 @@
 *.glo
 *.ilg
 *.ind
+*.gz
 
 aux/

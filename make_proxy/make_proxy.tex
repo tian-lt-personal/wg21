@@ -4,8 +4,25 @@
 \usepackage[margin=0.8in]{geometry}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{listings}
 
-\input{styles.tex}
+\newcommand{\CodeBlockSetup}{%
+  \lstset{
+        language=C++,
+        basicstyle=\small\ttfamily,
+        keywordstyle=,
+        stringstyle=,
+        xleftmargin=1em,
+        showstringspaces=false,
+        commentstyle=\itshape\rmfamily,
+        columns=fullflexible,
+        keepspaces=true,
+        texcl=true
+  }%
+}
+\lstnewenvironment{codeblock}{\CodeBlockSetup}{}
 
 \newcommand{\Cpp}{C\texttt{++}}
 \makeatletter

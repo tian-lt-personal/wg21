@@ -70,6 +70,13 @@ With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply 
 
 \textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is intended for custom allocators.
 
+\textit{inplace\_proxiable\_target} is a concept that restricts its associated \textit{facade} type and value type
+so that calling its correlated \textit{make\_proxy\_inplace} is well-formd.
+
+\textit{make\_proxy\_inplace}, similar to \verb|std::optional|,
+provides an SBO pointer that stores given values within its storage.
+More details about \textit{make\_proxy\_inplace} can be found in Technical specification.
+
 \section{Motivation}
 Class template \textit{proxy} is based on pointer semantics,
 which means it usually involves heap allocations to instantiate a \textit{proxy} object from value,
@@ -91,7 +98,8 @@ which may be considered an expensive cost in certain scenarios.
 To improve the construction from integer values in this case,
 we shall introduce SBO here.
 Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<Any>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
-With the SBO capability provided by \textit{make\_proxy}, users can choose the implementation below for the \verb|CreateYear()| function:
+With the SBO capability provided by \textit{make\_proxy}, which could be an internal implementation of a \textit{fancy pointer} that guarantees space efficiency,
+users can choose the implementation below for the \verb|CreateYear()| function:
 \begin{codeblock}
 std::proxy<Any> CreateYear() {
   return std::make_proxy<Any>(2024);  // no heap allocation happens
@@ -163,7 +171,7 @@ namespace std {
 
 \subsection{Concept \texttt{std::inplace\_proxiable\_target}}
 The concept \verb|inplace_proxiable_target<T, F>| specifies that a value type \verb|T|,
-when wrapped by an implementation-defined non-allocating pointer type,
+when wrapped by an \linebreak implementation-defined non-allocating pointer type,
 models a contained value type of \verb|proxy<F>|.
 The size and alignment of this implementation-defined pointer type are guaranteed to be equal to those of type \verb|T|.
 
@@ -172,7 +180,7 @@ The definition of \textit{allocate\_proxy} makes use of an exposition-only class
 An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of this contained object.
 Similar with \verb|std::optional|, \verb|allocated-ptr<T, Alloc>| provides \verb|operator*| for accessing the contained object with the same qualifiers,
 but does not necessarily support the state where the contained object is absent.\smallbreak
-\textit{allocate\_proxy} returns a construct \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of \verb|T|.
+\textit{allocate\_proxy} returns a constructed \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of \verb|T|.
 \medbreak
 
 \noindent 1. \verb|template <facade F, class T, class Alloc, class... Args>|\smallbreak

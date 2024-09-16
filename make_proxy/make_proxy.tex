@@ -87,7 +87,7 @@ For example, if the maximum pointer size defined by \verb|F::constraints.max_siz
 \begin{equation*}
 2 \times \texttt{sizeof(void*)}.
 \end{equation*}
-When a user wants to have a \textit{proxy} instance for an integer value $2024$, they may do
+When a user wants to have a \textit{proxy} instance for an integer value $2024$, the user may do
 \begin{codeblock}
 struct year {
   static constexpr proxiable_ptr_constraints constraints{

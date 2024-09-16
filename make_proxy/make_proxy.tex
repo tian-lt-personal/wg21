@@ -51,9 +51,9 @@ Audience: LEWG
 
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
 with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
-The focus of paper is on utility functions -- \textit{make\_proxy} and \textit{allocate\_proxy},
+The focus of paper is on utility functions -- \textit{make\_proxy}, \textit{allocate\_proxy} and \textit{make\_proxy\_inplace},
 which used to be included in the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal as a sub-feature.
-We believe they are useful tools to help allocate \textit{proxy} instances properly.
+We believe they are useful tools to help create \textit{proxy} instances properly.
 
 \section{Introduction}
 
@@ -88,21 +88,29 @@ For example, if the maximum pointer size defined by \verb|F::constraints.max_siz
 \end{equation*}
 When a user wants to have a \textit{proxy} instance for an integer value $2024$, they may do
 \begin{codeblock}
-struct Any : some_facade_builder::build {};
-std::proxy<Any> CreateYear() {
-  return std::make_unique<int>(2024);  // implicitly converts to \verb|std::proxy<Any>|
+struct year_ptr_constraints {
+  static constexpr std::size_t max_size = sizeof(void*[2]);
+  static constexpr std::size_t max_align = alignof(void*[2]);
+  // other constraints for the following year facade
+};
+struct year {
+  static constexpr year_ptr_constraints constraints{};
+  // other members to meet the facade name-requirement.
+};
+std::proxy<year> CreateYear() {
+  return std::make_unique<int>(2024);  // implicitly converts to \verb|std::proxy<year>|
 }
 \end{codeblock}
 Apparently, \verb|std::make_unique<int>(2024)| performs an allocation,
 which may be considered an expensive cost in certain scenarios.
 To improve the construction from integer values in this case,
 we shall introduce SBO here.
-Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<Any>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
+Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<year>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
 With the SBO capability provided by \textit{make\_proxy}, which could be an internal implementation of a \textit{fancy pointer} that guarantees space efficiency,
 users can choose the implementation below for the \verb|CreateYear()| function:
 \begin{codeblock}
-std::proxy<Any> CreateYear() {
-  return std::make_proxy<Any>(2024);  // no heap allocation happens
+std::proxy<year> CreateYear() {
+  return std::make_proxy<year>(2024);  // no heap allocation happens
 }
 \end{codeblock}
 In simple words,

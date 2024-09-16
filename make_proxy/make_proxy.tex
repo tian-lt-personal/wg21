@@ -53,7 +53,7 @@ Date: 2024-09-16
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
 with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
 The focus of paper is on utility functions -- \textit{make\_proxy}, \textit{allocate\_proxy} and \textit{make\_proxy\_inplace},
-which used to be included in the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal as a sub-feature.
+which were splitted from previous versions of the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal.
 We believe they are useful tools to help create \textit{proxy} instances properly.
 
 \section{Introduction}
@@ -67,7 +67,7 @@ and concept \textit{inplace\_proxiable\_target} together with the \textit{proxy}
 
 \textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|.
 It is designed to provide simple ways to construct \textit{proxy} instances from values.
-With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to void the potential overhead that may come from unnecessary heap allocations.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to avoid the potential overhead that may come from unnecessary heap allocations.
 
 \textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is intended for custom allocators.
 
@@ -76,7 +76,7 @@ so that calling its correlated \textit{make\_proxy\_inplace} is well-formd.
 
 \textit{make\_proxy\_inplace}, similar to \verb|std::optional|,
 provides an SBO pointer that stores given values within its storage.
-More details about \textit{make\_proxy\_inplace} can be found in Technical specification.
+More details about \textit{make\_proxy\_inplace} can be found in Technical Specifications.
 
 \section{Motivation}
 Class template \textit{proxy} is based on pointer semantics,
@@ -89,13 +89,13 @@ For example, if the maximum pointer size defined by \verb|F::constraints.max_siz
 \end{equation*}
 When a user wants to have a \textit{proxy} instance for an integer value $2024$, they may do
 \begin{codeblock}
-struct year_ptr_constraints {
-  static constexpr std::size_t max_size = sizeof(void*[2]);
-  static constexpr std::size_t max_align = alignof(void*[2]);
-  // other constraints for the following year facade
-};
 struct year {
-  static constexpr year_ptr_constraints constraints{};
+  static constexpr proxiable_ptr_constraints constraints{
+    .max_size = sizeof(void*[2]),
+    .max_align = alignof(void*[2]),
+    .copyability = constraint_level::none,
+    .relocatability = constraint_level::nothrow,
+    .destructibility = constraint_level::nothrow};
   // other members to meet the facade name-requirement.
 };
 std::proxy<year> CreateYear() {
@@ -119,7 +119,7 @@ In simple words,
 and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed.
 Both conditions, as well as their resolution, shall happen at compile-time.
 
-\section{Technical specification}
+\section{Technical specifications}
 \subsection{Additional synopsis for header \textless memory\textgreater}
 
 \begin{codeblock}

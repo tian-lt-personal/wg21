@@ -63,11 +63,11 @@ which is designed to help people build extendable and efficient polymorphic prog
 This paper is proposing the utility part that is separated from early versions of paper P3086 and \href{https://wg21.link/p0957}{P0957}.
 
 More specifically, we are eager to add function templates \textit{make\_proxy}, \textit{allocate\_proxy}, \textit{make\_proxy\_inplace},
-and \textit{inplace\_proxiable\_target} together with the \textit{proxy} library into the standard as library features.
+and concept \textit{inplace\_proxiable\_target} together with the \textit{proxy} library into the standard as library features.
 
 \textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|.
 It is designed to provide simple ways to construct \textit{proxy} instances from values.
-With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to void the potential overhead that may come from extra heap allocations.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to void the potential overhead that may come from unnecessary heap allocations.
 
 \textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is intended for custom allocators.
 

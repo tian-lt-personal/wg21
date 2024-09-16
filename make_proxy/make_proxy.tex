@@ -57,29 +57,29 @@ We believe they are useful tools to help allocate \textit{proxy} instances prope
 
 \section{Introduction}
 
-Paper \href{https://wg21.link/p3086}{3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
+Paper \href{https://wg21.link/p3086}{P3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
 which is designed to help people build extendable and efficient polymorphic programs with better abstractions and less intrusive code.
-This paper is proposing the utility part that is separated from early versions of paper 3086 and \href{https://wg21.link/p0957}{0957}.
+This paper is proposing the utility part that is separated from early versions of paper P3086 and \href{https://wg21.link/p0957}{P0957}.
 
-More specifically, we are eager to add function templates \textit{make\_proxy} and \textit{allocate\_proxy} together with the \textit{proxy} library into the standard as library features.
+More specifically, we are eager to add function templates \textit{make\_proxy}, \textit{allocate\_proxy}, \textit{make\_proxy\_inplace},
+and \textit{inplace\_proxiable\_target} together with the \textit{proxy} library into the standard as library features.
+
 \textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|.
 It is designed to provide simple ways to construct \textit{proxy} instances from values.
-With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply,
-depending on library implementation,
-to reduce the potential overheads that may come from invoking \textit{proxy}'s constructors directly.
-\textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|.
-It is designed to help construct \textit{proxy} objects without the limitations of the size and the alignment for its underlying pointer type.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to void the potential overhead that may come from extra heap allocations.
+
+\textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is intended for custom allocators.
 
 \section{Motivation}
 Class template \textit{proxy} is based on pointer semantics,
-which means instantiating a \textit{proxy} object from value usually involves heap allocations,
-though sometimes those allocations could be evitable if the size of value's type is small enough.
+which means it usually involves heap allocations to instantiate a \textit{proxy} object from value,
+though sometimes those allocations could be evitable if the value's type is trivial enough.
 
-For example, given the default maximum pointer size defined by \verb|F::constraints.max_size| is\smallbreak
+For example, if the maximum pointer size defined by \verb|F::constraints.max_size| is\smallbreak
 \begin{equation*}
 2 \times \texttt{sizeof(void*)}.
 \end{equation*}
-When users want to have a \textit{proxy} instance for an integer value $2024$, they may do
+When a user wants to have a \textit{proxy} instance for an integer value $2024$, they may do
 \begin{codeblock}
 struct Any : some_facade_builder::build {};
 std::proxy<Any> CreateYear() {
@@ -91,15 +91,16 @@ which may be considered an expensive cost in certain scenarios.
 To improve the construction from integer values in this case,
 we shall introduce SBO here.
 Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<Any>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
-With the SBO capability provided by \textit{make\_proxy}, users can choose below implementation for the \verb|CreateYear()| function:
+With the SBO capability provided by \textit{make\_proxy}, users can choose the implementation below for the \verb|CreateYear()| function:
 \begin{codeblock}
 std::proxy<Any> CreateYear() {
   return std::make_proxy<Any>(2024);  // no heap allocation happens
 }
 \end{codeblock}
 In simple words,
-\textit{make\_proxy} shall first try constructing a \textit{proxy} object with given values stored inplace,
-and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed at compile-time.
+\textit{make\_proxy} shall initially try constructing a \textit{proxy} object with given values stored inplace,
+and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed.
+Both conditions, as well as their resolution, shall happen at compile-time.
 
 \section{Technical specification}
 \subsection{Additional synopsis for header \textless memory\textgreater}
@@ -130,25 +131,26 @@ namespace std {
 \begin{codeblock}
 namespace std {
   template <class F>
-    concept facade // = see p3086;
+    concept facade // = see p3086r3;
   template <class F>
-    class proxy; // see p3086
+    class proxy; // see p3086r3
 }
 
 \end{codeblock}
 
 \subsection{Function template \texttt{std::allocate\_proxy}}
 The definition of \textit{allocate\_proxy} makes use of an exposition-only class template \textit{allocated-ptr}.
-An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type T with an allocator of type Alloc and manages the lifetime of this contained object.
+An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of this contained object.
 Similar with \verb|std::optional|, \verb|allocated-ptr<T, Alloc>| provides \verb|operator*| for accessing the contained object with the same qualifiers,
 but does not necessarily support the state where the contained object is absent.\smallbreak
-\textit{allocate\_proxy} returns a construct \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of T.
+\textit{allocate\_proxy} returns a construct \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of \verb|T|.
 \medbreak
 
 \noindent 1. \verb|template <facade F, class T, class Alloc, class... Args>|\smallbreak
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, Args&&... args);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with \verb|std::forward<Args>(args)...|,
+where the contained value of type \verb|T| is direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
 \bigbreak
 
 \noindent 2. \verb|template <facade F, class T, class Alloc, class U, class... Args>|\smallbreak
@@ -167,7 +169,7 @@ but does not necessarily support the state where the contained object is absent.
 \indent \verb|proxy<F> make_proxy(Args&&... args);|
 
 \textit{Effects}: Creates an instance of \verb|proxy<F>| with an unspecified pointer type of \verb|T|,
-where the value of \verb|T| is direct-non-list-initialized with the arguments \verb|std::forward<Args>(args)....|
+where the value of \verb|T| is direct-non-list-initialized with the arguments \verb|std::forward<Args>(args)...| of type.
 
 Remarks: Implementations are not permitted to use additional storage, such as dynamic memory, to
 allocate the value of \verb|T| if the following conditions apply:
@@ -176,7 +178,9 @@ allocate the value of \verb|T| if the following conditions apply:
   \item[--] \verb|alignof(T)| $\le$ \verb|F::constraints.max_align|, and
   \item[--] \verb|T| meets the copyiability requirements defined by \verb|F::constraints.copyability|, and
   \item[--] \verb|T| meets the relocatability requirements defined by \verb|F::constraints.relocatability|, and
-  \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|.
+  \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|, and
+  \item[--] for any reflection type \verb|R| defined by \verb|F::reflection_types|,\smallbreak
+  \verb|R| shall be constructible from \verb|std::in_place_type_t<sbo-ptr<T>>|.
 \end{itemize}
 
 \noindent 2. \verb|template <facade F, class T, class U, class... Args>|\smallbreak
@@ -196,7 +200,7 @@ allocate the value of \verb|T| if the following conditions apply:
 \end{codeblock}
 
 \section{Acknowledgements}
-Thanks to Mingxin for his advanced work on \href{https://wg21.link/p0957}{P0957} and \href{https://wg21.link/p3086}{P3086}
+Thanks to Mingxin for his advanced work on \href{https://wg21.link/p0957}{P0957} and \href{https://wg21.link/p3086}{P3086},
 and for giving me a chance to join him together to complete the work of \text{proxy}.
 
 \section{References}
@@ -213,7 +217,5 @@ Mingxin Wang
 Open-source: Microsoft Proxy at GitHub\smallbreak
 URL: https://github.com/microsoft/proxy
 \end{thebibliography}
-
-
 
 \end{document}

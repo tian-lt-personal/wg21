@@ -4,8 +4,25 @@
 \usepackage[margin=0.8in]{geometry}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{listings}
 
-\input{styles.tex}
+\newcommand{\CodeBlockSetup}{%
+  \lstset{
+        language=C++,
+        basicstyle=\small\ttfamily,
+        keywordstyle=,
+        stringstyle=,
+        xleftmargin=1em,
+        showstringspaces=false,
+        commentstyle=\itshape\rmfamily,
+        columns=fullflexible,
+        keepspaces=true,
+        texcl=true
+  }%
+}
+\lstnewenvironment{codeblock}{\CodeBlockSetup}{}
 
 \newcommand{\Cpp}{C\texttt{++}}
 \makeatletter
@@ -25,8 +42,9 @@ Polymorphism Library - Proxy}
 \medbreak
 Project: ISO/IEC 14882 Programming Languages — \Cpp{}, ISO/IEC JTC1/SC22/WG21\smallbreak
 Authors: Tian Liao, Mingxin Wang\smallbreak
-Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater \smallbreak
-Audience: LEWG
+Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater; Mingxin Wang \textless mingxwa@microsoft.com\textgreater \smallbreak
+Audience: LEWG\smallbreak
+Date: 2024-09-16
 }
 
 \begin{document}
@@ -34,61 +52,83 @@ Audience: LEWG
 
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
 with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
-The focus of paper is on utility functions -- \textit{make\_proxy} and \textit{allocate\_proxy},
+The focus of paper is on utility functions -- \textit{make\_proxy}, \textit{allocate\_proxy} and \textit{make\_proxy\_inplace},
 which used to be included in the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal as a sub-feature.
-We believe they are useful tools to help allocate \textit{proxy} instances properly.
+We believe they are useful tools to help create \textit{proxy} instances properly.
 
 \section{Introduction}
 
-Paper \href{https://wg21.link/p3086}{3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
+Paper \href{https://wg21.link/p3086}{P3086} proposed a \textit{Pointer-Semantics-Based Polymorphism Library},
 which is designed to help people build extendable and efficient polymorphic programs with better abstractions and less intrusive code.
-This paper is proposing the utility part that is separated from early versions of paper 3086 and \href{https://wg21.link/p0957}{0957}.
+This paper is proposing the utility part that is separated from early versions of paper P3086 and \href{https://wg21.link/p0957}{P0957}.
 
-More specifically, we are eager to add function templates \textit{make\_proxy} and \textit{allocate\_proxy} together with the \textit{proxy} library into the standard as library features.
+More specifically, we are eager to add function templates \textit{make\_proxy}, \textit{allocate\_proxy}, \textit{make\_proxy\_inplace},
+and \textit{inplace\_proxiable\_target} together with the \textit{proxy} library into the standard as library features.
+
 \textit{make\_proxy}'s syntax is similar to the constuctors of \verb|std::any|.
 It is designed to provide simple ways to construct \textit{proxy} instances from values.
-With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply,
-depending on library implementation,
-to reduce the potential overheads that may come from invoking \textit{proxy}'s constructors directly.
-\textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|.
-It is designed to help construct \textit{proxy} objects without the limitations of the size and the alignment for its underlying pointer type.
+With \textit{make\_proxy}, SBO (small buffer optimization) may implicitly apply to void the potential overhead that may come from extra heap allocations.
+
+\textit{allocate\_proxy}'s syntax is similar to \verb|std::allocate_shared|. It is intended for custom allocators.
+
+\textit{inplace\_proxiable\_target} is a concept that restricts its associated \textit{facade} type and value type
+so that calling its correlated \textit{make\_proxy\_inplace} is well-formd.
+
+\textit{make\_proxy\_inplace}, similar to \verb|std::optional|,
+provides an SBO pointer that stores given values within its storage.
+More details about \textit{make\_proxy\_inplace} can be found in Technical specification.
 
 \section{Motivation}
 Class template \textit{proxy} is based on pointer semantics,
-which means instantiating a \textit{proxy} object from value usually involves heap allocations,
-though sometimes those allocations could be evitable if the size of value's type is small enough.
+which means it usually involves heap allocations to instantiate a \textit{proxy} object from value,
+though sometimes those allocations could be evitable if the value's type is trivial enough.
 
-For example, given the default maximum pointer size defined by \verb|F::constraints.max_size| is\smallbreak
+For example, if the maximum pointer size defined by \verb|F::constraints.max_size| is\smallbreak
 \begin{equation*}
 2 \times \texttt{sizeof(void*)}.
 \end{equation*}
-When users want to have a \textit{proxy} instance for an integer value $2024$, they may do
+When a user wants to have a \textit{proxy} instance for an integer value $2024$, they may do
 \begin{codeblock}
-struct Any : some_facade_builder::build {};
-std::proxy<Any> CreateYear() {
-  return std::make_unique<int>(2024);  // implicitly converts to \verb|std::proxy<Any>|
+struct year_ptr_constraints {
+  static constexpr std::size_t max_size = sizeof(void*[2]);
+  static constexpr std::size_t max_align = alignof(void*[2]);
+  // other constraints for the following year facade
+};
+struct year {
+  static constexpr year_ptr_constraints constraints{};
+  // other members to meet the facade name-requirement.
+};
+std::proxy<year> CreateYear() {
+  return std::make_unique<int>(2024);  // implicitly converts to \verb|std::proxy<year>|
 }
 \end{codeblock}
 Apparently, \verb|std::make_unique<int>(2024)| performs an allocation,
 which may be considered an expensive cost in certain scenarios.
 To improve the construction from integer values in this case,
 we shall introduce SBO here.
-Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<Any>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
-With the SBO capability provided by \textit{make\_proxy}, users can choose below implementation for the \verb|CreateYear()| function:
+Because the storage size (e.g. 16 bytes on 64-bit machines) of \verb|std::proxy<year>| is mostly sufficient to place a value of integer type (e.g. 4 bytes).
+With the SBO capability provided by \textit{make\_proxy}, which could be an internal implementation of a \textit{fancy pointer} that guarantees space efficiency,
+users can choose the implementation below for the \verb|CreateYear()| function:
 \begin{codeblock}
-std::proxy<Any> CreateYear() {
-  return std::make_proxy<Any>(2024);  // no heap allocation happens
+std::proxy<year> CreateYear() {
+  return std::make_proxy<year>(2024);  // no heap allocation happens
 }
 \end{codeblock}
 In simple words,
-\textit{make\_proxy} shall first try constructing a \textit{proxy} object with given values stored inplace,
-and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed at compile-time.
+\textit{make\_proxy} shall initially try constructing a \textit{proxy} object with given values stored inplace,
+and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed.
+Both conditions, as well as their resolution, shall happen at compile-time.
 
 \section{Technical specification}
 \subsection{Additional synopsis for header \textless memory\textgreater}
 
 \begin{codeblock}
 namespace std {
+  // concept inplace\_proxiable\_target
+  template <class T, class F>
+  concept inplace_proxiable_target = proxiable</* inplace-ptr<T> */, F>;
+
+  // the allocate\_proxy overloads
   template <facade F, class T, class Alloc, class... Args>
   proxy<F> allocate_proxy(const Alloc& alloc, Args&&... args);
 
@@ -98,6 +138,22 @@ namespace std {
   template <facade F, class Alloc, class T>
   proxy<F> allocate_proxy(const Alloc& alloc, T&& value);
 
+  // the make\_proxy\_inplace overloads
+  template <facade F, inplace_proxiable_target<F> T, class... Args>
+  proxy<F> make_proxy_inplace(Args&&... args)
+      noexcept(std::is_nothrow_constructible_v<T, Args...>);
+
+  template <facade F, inplace_proxiable_target<F> T, class U, class... Args>
+  proxy<F> make_proxy_inplace(std::initializer_list<U> il, Args&&... args)
+      noexcept(std::is_nothrow_constructible_v<
+          T, std::initializer_list<U>&, Args...>);
+
+  template <facade F, class T>
+  proxy<F> make_proxy_inplace(T&& value)
+      noexcept(std::is_nothrow_constructible_v<std::decay_t<T>, T>)
+      requires(inplace_proxiable_target<std::decay_t<T>, F>);
+
+  // the make\_proxy overloads
   template <facade F, class T, class... Args>
   proxy<F> make_proxy(Args&&... args);
   
@@ -113,44 +169,84 @@ namespace std {
 \begin{codeblock}
 namespace std {
   template <class F>
-    concept facade // = see p3086;
+    concept facade = // see p3086r3;
+  template <class P, class F>
+    concept proxiable = // see p3086r3;
   template <class F>
-    class proxy; // see p3086
+    class proxy; // see p3086r3
 }
 
 \end{codeblock}
 
+\subsection{Concept \texttt{std::inplace\_proxiable\_target}}
+The concept \verb|inplace_proxiable_target<T, F>| specifies that a value type \verb|T|,
+when wrapped by an \linebreak implementation-defined non-allocating pointer type,
+models a contained value type of \verb|proxy<F>|.
+The size and alignment of this implementation-defined pointer type are guaranteed to be equal to those of type \verb|T|.
+
 \subsection{Function template \texttt{std::allocate\_proxy}}
 The definition of \textit{allocate\_proxy} makes use of an exposition-only class template \textit{allocated-ptr}.
-An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type T with an allocator of type Alloc and manages the lifetime of this contained object.
+An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of this contained object.
 Similar with \verb|std::optional|, \verb|allocated-ptr<T, Alloc>| provides \verb|operator*| for accessing the contained object with the same qualifiers,
 but does not necessarily support the state where the contained object is absent.\smallbreak
-\textit{allocate\_proxy} returns a construct \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of T.
+\textit{allocate\_proxy} returns a constructed \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of \verb|T|.
 \medbreak
 
 \noindent 1. \verb|template <facade F, class T, class Alloc, class... Args>|\smallbreak
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, Args&&... args);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
-\bigbreak
+\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with \verb|std::forward<Args>(args)...|,
+where the contained value of type \verb|T| is direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
+\medbreak
 
 \noindent 2. \verb|template <facade F, class T, class Alloc, class U, class... Args>|\smallbreak
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, std::initializer_list<U> il, Args&&... args);|
 \medbreak
 \textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with il, \verb|std::forward<Args>(args)...|.
-\bigbreak
+\medbreak
 
 \noindent 3. \verb|template <facade F, class Alloc, class T>|\smallbreak
 \indent \verb|proxy<F> allocate_proxy(const Alloc& alloc, T&& value);|
 \medbreak
 \textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<std::decay_t<T>, Alloc>| direct-non-list-initialized with \verb|std::forward<T>(value)|.
 
+\subsection{Function template \texttt{std::make\_proxy\_inplace}}
+The definition of \verb|make_proxy_inplace| makes use of an exposition-only class template \verb|sbo-ptr|.
+Similar to \verb|std::optional|, \verb|sbo-ptr<T>| contains the storage for an object of type \verb|T|, manages its lifetime,
+and provides \verb|operator*| for access with the same qualifiers.
+However, it does not necessarily support the state where the contained object is absent.
+\verb|sbo-ptr<T>| has the same size and alignment as \verb|T|.\medbreak
+
+\noindent 1. \verb|template <facade F, inplace_proxiable_target<F> T, class... Args>|\smallbreak
+\indent \verb|proxy<F> make_proxy_inplace(Args&&... args)|\smallbreak
+\indent \indent \verb|noexcept(std::is_nothrow_constructible_v<T, Args...>);|
+
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<T>| direct-non-list-initialized with \smallbreak
+\verb|std::forward<Args>(args)...|.
+\medbreak
+
+\noindent 2. \verb|template <facade F, inplace_proxiable_target<F> T, class U, class... Args>|\smallbreak
+\indent \verb|proxy<F> make_proxy_inplace(std::initializer_list<U> il, Args&&... args)|\smallbreak
+\indent \indent \verb|noexcept(std::is_nothrow_constructible_v<|\smallbreak
+\indent \indent \indent \verb|T, std::initializer_list<U>&, Args...>);|
+
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<T>| direct-non-list-initialized with il, \smallbreak
+\verb|std::forward<Args>(args)...|.
+\medbreak
+
+\noindent 3. \verb|template <facade F, class T>|\smallbreak
+\indent \verb|proxy<F> make_proxy_inplace(T&& value)|\smallbreak
+\indent \indent \verb|noexcept(std::is_nothrow_constructible_v<std::decay_t<T>, T>)|\smallbreak
+\indent \indent \verb|requires(inplace_proxiable_target<std::decay_t<T>, F>);|
+
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<std::decay_t<T>>| direct-non-list-initialized with \verb|std::forward<T>(value)|.
+
 \subsection{Function template \texttt{std::make\_proxy}}
 1. \verb|template <facade F, class T, class... Args>|\smallbreak
 \indent \verb|proxy<F> make_proxy(Args&&... args);|
 
 \textit{Effects}: Creates an instance of \verb|proxy<F>| with an unspecified pointer type of \verb|T|,
-where the value of \verb|T| is direct-non-list-initialized with the arguments \verb|std::forward<Args>(args)....|
+where the value of \verb|T| is direct-non-list-initialized with the arguments \verb|std::forward<Args>(args)...| of type.
 
 Remarks: Implementations are not permitted to use additional storage, such as dynamic memory, to
 allocate the value of \verb|T| if the following conditions apply:
@@ -159,7 +255,9 @@ allocate the value of \verb|T| if the following conditions apply:
   \item[--] \verb|alignof(T)| $\le$ \verb|F::constraints.max_align|, and
   \item[--] \verb|T| meets the copyiability requirements defined by \verb|F::constraints.copyability|, and
   \item[--] \verb|T| meets the relocatability requirements defined by \verb|F::constraints.relocatability|, and
-  \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|.
+  \item[--] \verb|T| meets the destructibility requirements defined by \verb|F::constraints.destructibility|, and
+  \item[--] for any reflection type \verb|R| defined by \verb|F::reflection_types|,\smallbreak
+  \verb|R| shall be constructible from \verb|std::in_place_type_t<sbo-ptr<T>>|.
 \end{itemize}
 
 \noindent 2. \verb|template <facade F, class T, class U, class... Args>|\smallbreak
@@ -179,7 +277,7 @@ allocate the value of \verb|T| if the following conditions apply:
 \end{codeblock}
 
 \section{Acknowledgements}
-Thanks to Mingxin for his advanced work on \href{https://wg21.link/p0957}{P0957} and \href{https://wg21.link/p3086}{P3086}
+Thanks to Mingxin for his advanced work on \href{https://wg21.link/p0957}{P0957} and \href{https://wg21.link/p3086}{P3086},
 and for giving me a chance to join him together to complete the work of \text{proxy}.
 
 \section{References}
@@ -196,7 +294,5 @@ Mingxin Wang
 Open-source: Microsoft Proxy at GitHub\smallbreak
 URL: https://github.com/microsoft/proxy
 \end{thebibliography}
-
-
 
 \end{document}

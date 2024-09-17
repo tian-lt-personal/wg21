@@ -120,6 +120,84 @@ In simple words,
 and then fall back to storing the given values in an arbitrary memory range with heap allocations if the first trial failed.
 Both conditions, as well as their resolution, shall happen at compile-time.
 
+\section{Considerations}
+\subsection{Construction of \textit{proxy}}
+According to \href{https://wg21.link/p3086}{P3086},
+there are three different constructors of \textit{proxy} that allow user to create a new \textit{proxy} instance from an object of type \verb|P| or \verb|decay_t<P>|.
+\begin{codeblock}
+template <class P>
+proxy(P&& ptr) noexcept(/*see P3086*/) requires(/*see P3086*/);
+
+template <class P, class... Args>
+explicit proxy(in_place_type_t<P>, Args&&... args)
+  noexcept(/*see P3086*/) requires(/*see P3086*/);
+
+template <class P, class U, class... Args>
+explicit proxy(in_place_type_t<P>, initializer_list<U> il,
+  Args&&... args)
+  noexcept(/*see P3086*/) requires(/*see P3086*/);
+\end{codeblock}
+The type name \verb|P| used in template arguments stands for a raw pointer type or a \textit{fancy pointer} type.
+These three constructors meet all the needs of \textit{proxy} itself,
+but they are not always convenient to use when the type \verb|P| is managing the ownership of the value that it is pointing to.
+Construction from a value and using a custom allocator are the very typical use cases related to the problem.
+
+\subsection{Construction from a value}
+Let's continue on the \verb|CreateYear| example above.
+To eliminate unnecessary allocations, user may have to provide an adhoc \textit{sbo-ptr} that wraps a trivial value and pretend to be a pointer type,
+and then use it to construct a \textit{proxy} object.
+For example:
+\begin{codeblock}
+template <class T>
+class sbo_ptr {
+ public:
+  template <class... Args>
+  sbo_ptr(Args&&... args)
+      noexcept(std::is_nothrow_constructible_v<T, Args...>)
+      requires(std::is_constructible_v<T, Args...>)
+      : value_(std::forward<Args>(args)...) {}
+  sbo_ptr(const inplace_ptr&)
+      noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
+  sbo_ptr(inplace_ptr&&)
+      noexcept(std::is_nothrow_move_constructible_v<T>) = default;
+
+  T* operator->() noexcept { return &value_; }
+  const T* operator->() const noexcept { return &value_; }
+  T& operator*() & noexcept { return value_; }
+  const T& operator*() const& noexcept { return value_; }
+  T&& operator*() && noexcept { return std::forward<T>(value_); }
+  const T&& operator*() const&& noexcept
+      { return std::forward<const T>(value_); }
+
+ private:
+  T value_;
+};
+
+auto CreateYear() {
+  return std::proxy<year>{
+    sbo_ptr<int>{2024}};
+}
+\end{codeblock}
+
+With \textit{make\_proxy\_inplace} or \textit{make\_proxy},
+the tools we are proposing in this paper,
+user can achieve the same goal with a simple line, like:
+\begin{codeblock}
+auto CreateYear() {
+  return std::make_proxy<year, int>(2024);
+}
+\end{codeblock}
+Or, in this use case, it is equvialent to:
+\begin{codeblock}
+auto CreateYear() {
+  return std::make_proxy_inplace<year, int>(2024);
+}
+\end{codeblock}
+
+\subsection{Custom allocator}
+\subsection{Freestanding}
+\subsection{Feature test macro}
+
 \section{Technical specifications}
 \subsection{Additional synopsis for header \textless memory\textgreater}
 

@@ -7,6 +7,7 @@
 \usepackage{color}
 \usepackage{enumitem}
 \usepackage{listings}
+\usepackage{hyphenat}
 
 \newcommand{\CodeBlockSetup}{%
   \lstset{
@@ -51,7 +52,7 @@ Date: 2024-09-16
 \maketitle
 
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
-with the type-erased technique to support non-intrusive polymorphism programming in \Cpp.
+with the type erasure technique to support non-intrusive polymorphism programming in \Cpp.
 The focus of paper is on utility functions -- \textit{make\_proxy}, \textit{allocate\_proxy} and \textit{make\_proxy\_inplace},
 which were splitted from previous versions of the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal.
 We believe they are useful tools to help create \textit{proxy} instances properly.
@@ -128,7 +129,7 @@ namespace std {
   template <class T, class F>
   concept inplace_proxiable_target = proxiable</* inplace-ptr<T> */, F>;
 
-  // the allocate\_proxy overloads
+  // the allocate\_proxy overloads, which are freestanding-deleted
   template <facade F, class T, class Alloc, class... Args>
   proxy<F> allocate_proxy(const Alloc& alloc, Args&&... args);
 
@@ -153,7 +154,7 @@ namespace std {
       noexcept(std::is_nothrow_constructible_v<std::decay_t<T>, T>)
       requires(inplace_proxiable_target<std::decay_t<T>, F>);
 
-  // the make\_proxy overloads
+  // the make\_proxy overloads, which are freestanding-deleted
   template <facade F, class T, class... Args>
   proxy<F> make_proxy(Args&&... args);
   
@@ -180,14 +181,14 @@ namespace std {
 
 \subsection{Concept \texttt{std::inplace\_proxiable\_target}}
 The concept \verb|inplace_proxiable_target<T, F>| specifies that a value type \verb|T|,
-when wrapped by an \linebreak implementation-defined non-allocating pointer type,
+when wrapped by an implementation\hyp{}defined non\hyp{}allocating pointer type,
 models a contained value type of \verb|proxy<F>|.
 The size and alignment of this implementation-defined pointer type are guaranteed to be equal to those of type \verb|T|.
 
 \subsection{Function template \texttt{std::allocate\_proxy}}
 The definition of \textit{allocate\_proxy} makes use of an exposition-only class template \textit{allocated-ptr}.
 An object of type \verb|allocated-ptr<T, Alloc>| allocates the storage for another object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of this contained object.
-Similar with \verb|std::optional|, \verb|allocated-ptr<T, Alloc>| provides \verb|operator*| for accessing the contained object with the same qualifiers,
+Similar to \verb|std::optional|, \verb|allocated-ptr<T, Alloc>| provides \verb|operator*| for accessing the managed object of type \verb|T| with the same qualifiers,
 but does not necessarily support the state where the contained object is absent.\smallbreak
 \textit{allocate\_proxy} returns a constructed \textit{proxy} object. It may throw any exception thrown by allocation or the constructor of \verb|T|.
 \medbreak
@@ -195,20 +196,22 @@ but does not necessarily support the state where the contained object is absent.
 \noindent 1. \verb|template <facade F, class T, class Alloc, class... Args>|\smallbreak
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, Args&&... args);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with \verb|std::forward<Args>(args)...|,
-where the contained value of type \verb|T| is direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|allocated-ptr<T, Alloc>|,
+where \verb|*p| is direct-non-list-initialized with \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 2. \verb|template <facade F, class T, class Alloc, class U, class... Args>|\smallbreak
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, std::initializer_list<U> il, Args&&... args);|
 \medbreak
-\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<T, Alloc>| direct-non-list-initialized with il, \verb|std::forward<Args>(args)...|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|allocated-ptr<T, Alloc>|,
+where \verb|*p| is direct-non-list-initialized with il, \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 3. \verb|template <facade F, class Alloc, class T>|\smallbreak
 \indent \verb|proxy<F> allocate_proxy(const Alloc& alloc, T&& value);|
 \medbreak
-\textit{Effects}: Creates a \verb|proxy<F>| object containing an \verb|allocated-ptr<std::decay_t<T>, Alloc>| direct-non-list-initialized with \verb|std::forward<T>(value)|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|allocated-ptr<std::decay_t<T>, Alloc>|,
+where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with \verb|std::forward<T>(value)|.
 
 \subsection{Function template \texttt{std::make\_proxy\_inplace}}
 The definition of \verb|make_proxy_inplace| makes use of an exposition-only class template \verb|sbo-ptr|.

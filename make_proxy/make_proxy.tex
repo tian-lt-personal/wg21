@@ -36,11 +36,12 @@
 }
 \makeatother
 
-\title{Add make\_proxy for the Pointer-Semantics-Based
+\title{Enrich Creation Functions for the Pointer-Semantics-Based
 Polymorphism Library - Proxy}
 \date{Sept. 15, 2024}
 \author{%
 \medbreak
+Document number: P3401R0\smallbreak
 Project: ISO/IEC 14882 Programming Languages — \Cpp{}, ISO/IEC JTC1/SC22/WG21\smallbreak
 Authors: Tian Liao, Mingxin Wang\smallbreak
 Reply-to: Tian Liao \textless tilia@microsoft.com\textgreater; Mingxin Wang \textless mingxwa@microsoft.com\textgreater \smallbreak
@@ -54,7 +55,7 @@ Date: 2024-09-16
 \textbf{Abstract:} \textit{Proxy} is a new library feature that is being proposed to delegate general pointer types
 with the type erasure technique to support non-intrusive polymorphism programming in \Cpp.
 The focus of paper is on utility functions -- \textit{make\_proxy}, \textit{allocate\_proxy} and \textit{make\_proxy\_inplace},
-which were splitted from previous versions of the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal.
+which were split from previous versions of the \href{https://wg21.link/p3086r1}{\textit{proxy}} proposal.
 We believe they are useful tools to help create \textit{proxy} instances properly.
 
 \section{Introduction}
@@ -123,7 +124,7 @@ Both conditions, as well as their resolution, shall happen at compile-time.
 \section{Considerations}
 \subsection{Construction of \textit{proxy}}
 According to \href{https://wg21.link/p3086}{P3086},
-there are three different constructors of \textit{proxy} that allow user to create a new \textit{proxy} instance from an object of type \verb|P| or \verb|decay_t<P>|.
+there are three different constructors of \textit{proxy} that allow users to create a new \textit{proxy} instance from an object of type \verb|P| or \verb|decay_t<P>|.
 \begin{codeblock}
 template <class P>
 proxy(P&& ptr) noexcept(/*see P3086*/) requires(/*see P3086*/);
@@ -144,7 +145,7 @@ Construction from a value and using a custom allocator are the very typical use 
 
 \subsection{Construction from a value}
 Let's continue on the \verb|CreateYear| example above.
-To eliminate unnecessary allocations, user may have to provide an adhoc \textit{sbo-ptr} that wraps a trivial value and pretend to be a pointer type,
+To eliminate unnecessary allocations, user may have to provide an ad hoc \textit{sbo-ptr} that wraps a trivial value and pretend to be a pointer type,
 and then use it to construct a \textit{proxy} object.
 For example:
 \begin{codeblock}
@@ -196,10 +197,10 @@ auto CreateYear() {
 
 \subsection{Custom allocator}
 Similar to \verb|std::allocate_shared|,
-\textit{allocate\_proxy} accepts a custom allocator and retains a copy of the allocator for releasing resources in future.
+\textit{allocate\_proxy} accepts a custom allocator and retains a copy of the allocator for releasing resources in the future.
 To achieve this goal,
 user may have to provide an \textit{allocated-ptr},
-which could be adhoc again like the \textit{sbo-ptr},
+which could be ad hoc again like the \textit{sbo-ptr},
 to allocates storage for its contained object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of its contained object.
 
 In addition, the implementation of \textit{allocated-ptr} may vary depending on the definition of its associated \textit{facade} type \verb|F|.
@@ -222,7 +223,7 @@ auto CreateHugeYear(){
 \subsection{Freestanding}
 As per all \textit{proxy} features proposed by \href{https://wg21.link/p3086}{P3086} are freestanding,
 the \textit{inplace\_proxiable\_target} concept and the \textit{make\_proxy\_inplace} function templates shall be freestanding as well.
-\textit{allocate\_proxy} and \textit{make\_proxy} are removed from freestanding because they involved dynamic allocations.
+\textit{allocate\_proxy} and \textit{make\_proxy} are not freestanding because they involved dynamic allocations.
 
 \subsection{Feature test macro}
 All the features proposed by this paper honors the test macro defined in \href{https://wg21.link/p3086}{P3086}.
@@ -315,7 +316,7 @@ where \verb|*p| is direct-non-list-initialized with \verb|std::forward<Args>(arg
 \verb|proxy<F> allocate_proxy(const Alloc& alloc, std::initializer_list<U> il, Args&&... args);|
 \medbreak
 \textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|allocated-ptr<T, Alloc>|,
-where \verb|*p| is direct-non-list-initialized with il, \verb|std::forward<Args>(args)...|.
+where \verb|*p| is direct-non-list-initialized with \verb|il|, \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 3. \verb|template <facade F, class Alloc, class T>|\smallbreak
@@ -345,7 +346,7 @@ where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with \verb|std::fo
 \indent \indent \indent \verb|T, std::initializer_list<U>&, Args...>);|
 
 \textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|sbo-ptr<T>|,
-where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with il, \verb|std::forward<Args>(args)...|.
+where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with \verb|il|, \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 3. \verb|template <facade F, class T>|\smallbreak

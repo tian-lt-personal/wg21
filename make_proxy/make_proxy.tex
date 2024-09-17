@@ -224,8 +224,8 @@ However, it does not necessarily support the state where the contained object is
 \indent \verb|proxy<F> make_proxy_inplace(Args&&... args)|\smallbreak
 \indent \indent \verb|noexcept(std::is_nothrow_constructible_v<T, Args...>);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<T>| direct-non-list-initialized with \smallbreak
-\verb|std::forward<Args>(args)...|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|sbo-ptr<T>|, 
+where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 2. \verb|template <facade F, inplace_proxiable_target<F> T, class U, class... Args>|\smallbreak
@@ -233,8 +233,8 @@ However, it does not necessarily support the state where the contained object is
 \indent \indent \verb|noexcept(std::is_nothrow_constructible_v<|\smallbreak
 \indent \indent \indent \verb|T, std::initializer_list<U>&, Args...>);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<T>| direct-non-list-initialized with il, \smallbreak
-\verb|std::forward<Args>(args)...|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|sbo-ptr<T>|,
+where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with il, \verb|std::forward<Args>(args)...|.
 \medbreak
 
 \noindent 3. \verb|template <facade F, class T>|\smallbreak
@@ -242,7 +242,8 @@ However, it does not necessarily support the state where the contained object is
 \indent \indent \verb|noexcept(std::is_nothrow_constructible_v<std::decay_t<T>, T>)|\smallbreak
 \indent \indent \verb|requires(inplace_proxiable_target<std::decay_t<T>, F>);|
 
-\textit{Effects}: Creates a \verb|proxy<F>| object containing a \verb|sbo-ptr<std::decay_t<T>>| direct-non-list-initialized with \verb|std::forward<T>(value)|.
+\textit{Effects}: Creates a \verb|proxy<F>| object containing a value \verb|p| of type \verb|sbo-ptr<std::decay_t<T>>|,
+where \verb|*p| is direct\hyp{}non\hyp{}list\hyp{}initialized with \verb|std::forward<T>(value)|.
 
 \subsection{Function template \texttt{std::make\_proxy}}
 1. \verb|template <facade F, class T, class... Args>|\smallbreak

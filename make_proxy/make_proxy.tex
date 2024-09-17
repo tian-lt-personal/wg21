@@ -195,8 +195,41 @@ auto CreateYear() {
 \end{codeblock}
 
 \subsection{Custom allocator}
+Similar to \verb|std::allocate_shared|,
+\textit{allocate\_proxy} accepts a custom allocator and retains a copy of the allocator for releasing resources in future.
+To achieve this goal,
+user may have to provide an \textit{allocated-ptr},
+which could be adhoc again like the \textit{sbo-ptr},
+to allocates storage for its contained object of type \verb|T| with an allocator of type \verb|Alloc| and manages the lifetime of its contained object.
+
+In addition, the implementation of \textit{allocated-ptr} may vary depending on the definition of its associated \textit{facade} type \verb|F|.
+Specifically, when \verb|F::constraints.max_size| and \verb|F::constraints.max_align| are not large enough to hold both a pointer to the allocated memory and a copy of the allocator,
+\textit{allocated-ptr} shall allocate additional storage for the allocator.
+
+\textit{allocate\_proxy} shall provide a built-in implementation for any \textit{facade} types.
+With textit{allocate\_proxy}, user can easily construct a \textit{proxy} object with a large data and a custom allocator.
+For example:
+\begin{codeblock}
+auto CreateHugeYear(){
+  // \verb|sizeof(std::array<int, 1000>)| is usually greater than the max\_size defined in facade,
+  // calling allocate\_proxy has no limitation to the size and alignment of the target
+  using HugeYearData = std::array<int, 1000>;
+  return std::allocate_proxy<year, HugeYearData>(
+    std::allocator<HugeYearData>{});
+}
+\end{codeblock}
+
 \subsection{Freestanding}
+As per all \textit{proxy} features proposed by \href{https://wg21.link/p3086}{P3086} are freestanding,
+the \textit{inplace\_proxiable\_target} concept and the \textit{make\_proxy\_inplace} function templates shall be freestanding as well.
+\textit{allocate\_proxy} and \textit{make\_proxy} are removed from freestanding because they involved dynamic allocations.
+
 \subsection{Feature test macro}
+All the features proposed by this paper honors the test macro defined in \href{https://wg21.link/p3086}{P3086}.
+That is:
+\begin{codeblock}
+#define __cpp_lib_proxy YYYYMML // also in \textless memory\textgreater
+\end{codeblock}
 
 \section{Technical specifications}
 \subsection{Additional synopsis for header \textless memory\textgreater}
